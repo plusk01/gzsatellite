@@ -123,7 +123,7 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS})
 
 ## Declare a C++ library
-add_library(TilePlugin SHARED src/TilePlugin.cpp src/tileloader.cpp)
+add_library(TilePlugin SHARED src/TilePlugin.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
