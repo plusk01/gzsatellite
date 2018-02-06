@@ -21,15 +21,23 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   createVisual(base_link);
 
   model->GetAttribute("name")->Set("parker_test");
+  model->AddElement("static")->Set("true");
 
   this->parent_->InsertModelSDF(*modelSDF);
+
 
   const std::string package_path = ros::package::getPath("gazebo_satellite");
   gzmsg << package_path << std::endl;
 
-  // boost::filesystem::path dir(package_path);
-  // dir /= "media";
-  // boost::filesystem::create_directory(dir);
+
+  std::string object_uri = "http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
+  double lat = 40.267463;
+  double lon = -111.635655;
+  double zoom = 3;
+  unsigned int blocks = 2;
+  loader_.reset(new TileLoader(object_uri, lat, lon, zoom, blocks));
+
+  loader_->start();
 
 
   gzmsg << "Hi" << std::endl;

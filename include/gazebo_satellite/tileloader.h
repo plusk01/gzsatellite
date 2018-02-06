@@ -27,9 +27,15 @@
 #include <sstream>
 #include <vector>
 #include <memory>
-#include <future>
+#include <fstream>
+#include <functional>
+#include <stdexcept>
+
+#include <gazebo/common/common.hh>
+#include <gazebo/gazebo.hh>
 
 #include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
 
 #include <cpr/cpr.h>
 
@@ -37,10 +43,7 @@
 class TileLoader {
 public:
   class MapTile {
-  public:
-    MapTile(const std::string& url, int x, int y, int z)
-        : x_(x), y_(y), z_(z), url_(url) {}
-      
+  public:     
     MapTile(int x, int y, int z, const std::string& path)
       : x_(x), y_(y), z_(z), path_(path) {}
 
@@ -53,26 +56,13 @@ public:
     /// Z tile zoom value.
     int z() const { return z_; }
 
-    /// Network reply.
-    // const QNetworkReply *reply() const { return reply_; }
-    const std::string url() const { return url_; }
-
-    /// Abort the network request for this tile, if applicable.
-    void abortLoading();
-
-    /// Has a tile successfully loaded?
-    bool hasImage() const;
-
     /// Image associated with this tile.
     const std::string& imagePath() const { return path_; }
-    void setImagePath(const std::string& path) { path_ = path; }
 
   private:
     int x_;
     int y_;
     int z_;
-    // QNetworkReply *reply_;
-    std::string url_;
     std::string path_;
   };
 
@@ -116,24 +106,7 @@ public:
   /// Cancel all current requests.
   void abort();
 
-// signals:
-
-//   void initiatedRequest(QNetworkRequest request);
-
-//   void receivedImage(QNetworkRequest request);
-
-//   void finishedLoading();
-
-//   void errorOcurred(std::string description);
-
-
-  void finishedRequest(const cpr::Response& r);
-
 private:
-
-  /// Check if loading is complete. Emit signal if appropriate.
-  bool checkIfLoadingComplete();
-
   /// URI for tile [x,y]
   std::string uriForTile(int x, int y) const;
 
@@ -155,7 +128,6 @@ private:
   double origin_offset_x_;
   double origin_offset_y_;
 
-  // std::shared_ptr<QNetworkAccessManager> qnam_;
   boost::filesystem::path cache_path_;
 
   std::string object_uri_;
