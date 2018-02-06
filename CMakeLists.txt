@@ -27,6 +27,39 @@ find_package(gazebo REQUIRED)
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 # catkin_python_setup()
 
+
+#################################################
+## Custom CMake Step: Download cpr C++ Library ##
+#################################################
+
+set(CPR_DIR ${CMAKE_CURRENT_BINARY_DIR}/cpr-download)
+
+# Don't build CPR tests and try to use the system libcurl (for speed)
+set(BUILD_CPR_TESTS OFF CACHE BOOL "Don't build cpr tests")
+find_package(CURL)
+if(CURL_FOUND)
+    set(USE_SYSTEM_CURL ON CACHE BOOL "Use the system curl for faster builds")
+endif()
+
+# Download cpr
+configure_file(
+  "${PROJECT_SOURCE_DIR}/cmake/cpr.cmake.in"
+  "${CPR_DIR}/CMakeLists.txt"
+  IMMEDIATE @ONLY)
+
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+    WORKING_DIRECTORY ${CPR_DIR})
+execute_process(
+    COMMAND ${CMAKE_COMMAND} --build .
+    WORKING_DIRECTORY ${CPR_DIR})
+
+# add the cpr CMake module to our current project
+add_subdirectory(${CPR_DIR}/src ${CPR_DIR}/build EXCLUDE_FROM_ALL)
+
+###############################################################################
+
+
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
@@ -120,7 +153,7 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${CPR_INCLUDE_DIRS})
 
 ## Declare a C++ library
 add_library(TilePlugin SHARED src/TilePlugin.cpp)
@@ -131,7 +164,7 @@ add_library(TilePlugin SHARED src/TilePlugin.cpp)
 add_dependencies(TilePlugin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(TilePlugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(TilePlugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${CPR_LIBRARIES})
 
 
 #############
