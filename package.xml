@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>gazebo_satellite</name>
+  <version>0.0.0</version>
+  <description>Create Gazebo satellite imagery worlds using GIS tileservers</description>
+
+  <maintainer email="parkerclusk@gmail.com">Parker Lusk</maintainer>
+  <author email="parkerclusk@gmail.com">Parker Lusk</author>
+  <license>BSD</license>
+
+  <depend>gazebo_ros</depend>
+  <buildtool_depend>catkin</buildtool_depend>
+
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>
