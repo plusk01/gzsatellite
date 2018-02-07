@@ -7,7 +7,7 @@
  * Based on the work of Gareth Cross, from the rviz_satellite package
  *    https://github.com/gareth-cross/rviz_satellite
  *
- * Parker Lusk, 2018
+ * Parker Lusk, Feb 2018
  *
  ******************************************************************************
  * TileLoader.h
@@ -66,11 +66,12 @@ public:
     std::string path_;
   };
 
-  explicit TileLoader(const std::string &service, double latitude,
-                      double longitude, unsigned int zoom, unsigned int blocks);
+  explicit TileLoader(const std::string& cacheRoot, const std::string& service,
+                      double latitude, double longitude,
+                      unsigned int zoom, unsigned int blocks);
 
-  /// Start loading tiles asynchronously.
-  void start();
+  /// blocking call to load all tiles
+  const std::vector<MapTile>& loadTiles();
 
   /// Meters/pixel of the tiles.
   double resolution() const;
@@ -92,33 +93,27 @@ public:
 
   /// Convert lat/lon to a tile index with mercator projection.
   static void latLonToTileCoords(double lat, double lon, unsigned int zoom,
-                                 double &x, double &y);
+                                 double& x, double& y);
 
   /// Convert latitude and zoom level to ground resolution.
   static double zoomToResolution(double lat, unsigned int zoom);
 
   /// Path to tiles on the server.
-  const std::string &objectURI() const { return object_uri_; }
+  const std::string& objectURI() const { return object_uri_; }
+
+  /// Hash of the tile service provider
+  const std::string& serviceHash() const { return service_hash_; }
+
+  /// Path of the cached images
+  const std::string& cachePath() const { return cache_path_.string(); }
 
   /// Current set of tiles.
-  const std::vector<MapTile> &tiles() const { return tiles_; }
+  const std::vector<MapTile>& tiles() const { return tiles_; }
 
   /// Cancel all current requests.
   void abort();
 
 private:
-  /// URI for tile [x,y]
-  std::string uriForTile(int x, int y) const;
-
-  /// Get name for cached tile [x,y,z]
-  std::string cachedNameForTile(int x, int y, int z) const;
-
-  /// Get file path for cached tile [x,y,z].
-  boost::filesystem::path cachedPathForTile(int x, int y, int z) const;
-
-  /// Maximum number of tiles for the zoom level
-  int maxTiles() const;
-
   double latitude_;
   double longitude_;
   unsigned int zoom_;
@@ -131,8 +126,21 @@ private:
   boost::filesystem::path cache_path_;
 
   std::string object_uri_;
+  std::string service_hash_;
 
   std::vector<MapTile> tiles_;
+  
+  /// URI for tile [x,y]
+  std::string uriForTile(int x, int y) const;
+
+  /// Get name for cached tile [x,y,z]
+  std::string cachedNameForTile(int x, int y, int z) const;
+
+  /// Get file path for cached tile [x,y,z].
+  boost::filesystem::path cachedPathForTile(int x, int y, int z) const;
+
+  /// Maximum number of tiles for the zoom level
+  int maxTiles() const;
 };
 
 #endif // TILELOADER_H

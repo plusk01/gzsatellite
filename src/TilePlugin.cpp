@@ -1,6 +1,10 @@
 #include "gazebo_satellite/TilePlugin.h"
 
+namespace fs = boost::filesystem;
+
 namespace gazebo {
+
+static const std::string root = "./gzsatellite/";
 
 TilePlugin::TilePlugin() {}
 
@@ -9,10 +13,33 @@ TilePlugin::TilePlugin() {}
 void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
 {
   this->parent_ = _parent;
-  // node = transport::NodePtr(new transport::Node());
-  // node->Init(parent->GetName());
-  // regen_sub = node->Subscribe("~/maze/regenerate", &TilePlugin::Regenerate, this);
 
+
+  std::string object_uri = "http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
+  double lat = 40.267463;
+  double lon = -111.635655;
+  double zoom = 3;
+  unsigned int blocks = 2;
+
+  loader_.reset(new TileLoader(root + "mapscache", object_uri, lat, lon, zoom, blocks));
+  
+  // blocking call to make all http requests for tile images
+  auto tiles = loader_->loadTiles();
+
+
+
+  // Create OGRE scripts directory
+  fs::path dir(root + "materials");
+  fs::create_directories(dir / "scripts");
+
+  // Create a symlink to the current tile provider's cache directory
+  fs::remove(dir / "textures");
+  fs::create_symlink(loader_->cachePath(), dir / "textures");
+
+
+
+
+  // Create a new, empty SDF model with a single link
   sdf::SDFPtr modelSDF(new sdf::SDF);
   sdf::init(modelSDF);
   sdf::ElementPtr model = modelSDF->Root()->AddElement("model");
@@ -24,24 +51,6 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   model->AddElement("static")->Set("true");
 
   this->parent_->InsertModelSDF(*modelSDF);
-
-
-  const std::string package_path = ros::package::getPath("gazebo_satellite");
-  gzmsg << package_path << std::endl;
-
-
-  std::string object_uri = "http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
-  double lat = 40.267463;
-  double lon = -111.635655;
-  double zoom = 3;
-  unsigned int blocks = 2;
-  loader_.reset(new TileLoader(object_uri, lat, lon, zoom, blocks));
-
-  loader_->start();
-
-
-  gzmsg << "Hi" << std::endl;
-  gzmsg << boost::filesystem::current_path() << std::endl;
 }
 
 // ----------------------------------------------------------------------------

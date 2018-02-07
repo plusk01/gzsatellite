@@ -7,7 +7,7 @@
  * Based on the work of Gareth Cross, from the rviz_satellite package
  *    https://github.com/gareth-cross/rviz_satellite
  *
- * Parker Lusk, 2018
+ * Parker Lusk, Feb 2018
  *
  ******************************************************************************
  * TileLoader.cpp
@@ -40,50 +40,44 @@ static size_t replaceRegex(const boost::regex &ex, std::string &str,
 
 // ----------------------------------------------------------------------------
 
-TileLoader::TileLoader(const std::string &service, double latitude,
-                       double longitude, unsigned int zoom, unsigned int blocks)
+TileLoader::TileLoader(const std::string& cacheRoot, const std::string& service,
+                       double latitude, double longitude,
+                       unsigned int zoom, unsigned int blocks)
     : latitude_(latitude), longitude_(longitude), zoom_(zoom),
       blocks_(blocks), object_uri_(service)
 {
   assert(blocks_ >= 0);
 
-  // const std::string package_path = ros::package::getPath("rviz_satellite");
-  const std::string package_path = ".";
-  if (package_path.empty()) {
-    throw std::runtime_error("package 'rviz_satellite' not found");
-  }
+  //
+  // Setup directory structure for downloaded images
+  //
 
+  // Hash the service URL so that tiles from different services are indepdendent
   std::hash<std::string> hash_fn;
-  cache_path_ = fs::path(package_path + "/gzsatellite/mapscache/"
-                          + std::to_string(hash_fn(object_uri_)));
+  service_hash_ = std::to_string(hash_fn(object_uri_));
 
   // Create the directory structure for the tile images
+  cache_path_ = fs::absolute(fs::path(cacheRoot + "/" + service_hash_));
   fs::create_directories(cache_path_);
 
-  /// @todo: some kind of error checking of the URL
 
-  //  calculate center tile coordinates
+  //
+  // Calculate center tile coordinates
+  //
+
   double x, y;
   latLonToTileCoords(latitude_, longitude_, zoom_, x, y);
   center_tile_x_ = std::floor(x);
   center_tile_y_ = std::floor(y);
-  //  fractional component
+
+  // fractional component
   origin_offset_x_ = x - center_tile_x_;
   origin_offset_y_ = y - center_tile_y_;
 }
 
 // ----------------------------------------------------------------------------
 
-bool TileLoader::insideCentreTile(double lat, double lon) const
-{
-  double x, y;
-  latLonToTileCoords(lat, lon, zoom_, x, y);
-  return (std::floor(x) == center_tile_x_ && std::floor(y) == center_tile_y_);
-}
-
-// ----------------------------------------------------------------------------
-
-void TileLoader::start()
+const std::vector<TileLoader::MapTile>& TileLoader::loadTiles()
 {
   // discard previous set of tiles and all pending requests
   abort();
@@ -128,13 +122,17 @@ void TileLoader::start()
       }
     }
   }
+
+  return tiles_;
 }
 
 // ----------------------------------------------------------------------------
 
-double TileLoader::resolution() const
+bool TileLoader::insideCentreTile(double lat, double lon) const
 {
-  return zoomToResolution(latitude_, zoom_);
+  double x, y;
+  latLonToTileCoords(lat, lon, zoom_, x, y);
+  return (std::floor(x) == center_tile_x_ && std::floor(y) == center_tile_y_);
 }
 
 // ----------------------------------------------------------------------------
@@ -164,12 +162,28 @@ void TileLoader::latLonToTileCoords(double lat, double lon, unsigned int zoom,
 
 // ----------------------------------------------------------------------------
 
+double TileLoader::resolution() const
+{
+  return zoomToResolution(latitude_, zoom_);
+}
+
+// ----------------------------------------------------------------------------
+
 double TileLoader::zoomToResolution(double lat, unsigned int zoom)
 {
   const double lat_rad = lat * M_PI / 180;
   return 156543.034 * std::cos(lat_rad) / (1 << zoom);
 }
 
+// ----------------------------------------------------------------------------
+
+void TileLoader::abort()
+{
+  tiles_.clear();
+}
+
+// ----------------------------------------------------------------------------
+// Private Methods
 // ----------------------------------------------------------------------------
 
 std::string TileLoader::uriForTile(int x, int y) const
@@ -207,11 +221,4 @@ fs::path TileLoader::cachedPathForTile(int x, int y, int z) const
 int TileLoader::maxTiles() const
 {
   return (1 << zoom_) - 1;
-}
-
-// ----------------------------------------------------------------------------
-
-void TileLoader::abort()
-{
-  tiles_.clear();
 }
