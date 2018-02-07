@@ -1,5 +1,7 @@
 #include <string>
 #include <memory>
+#include <fstream>
+#include <vector>
 
 #include <boost/filesystem.hpp>
 
@@ -23,12 +25,12 @@ namespace gazebo {
 
     private:
       physics::WorldPtr parent_;
-      
+
       std::unique_ptr<TileLoader> loader_;
 
       void createVisual(sdf::ElementPtr link);
 
-
+      void createScript(const std::string& path, const boost::filesystem::path& imgPath);
   };
 }
 

@@ -73,6 +73,12 @@ TileLoader::TileLoader(const std::string& cacheRoot, const std::string& service,
   // fractional component
   origin_offset_x_ = x - center_tile_x_;
   origin_offset_y_ = y - center_tile_y_;
+
+  gzdbg << "center tile x: " << center_tile_x_ << std::endl;
+  gzdbg << "center tile y: " << center_tile_y_ << std::endl;
+
+  gzdbg << "origin offset x: " << origin_offset_x_ << std::endl;
+  gzdbg << "origin offset y: " << origin_offset_y_ << std::endl;
 }
 
 // ----------------------------------------------------------------------------
@@ -98,7 +104,7 @@ const std::vector<TileLoader::MapTile>& TileLoader::loadTiles()
 
       // Check if tile is already in the cache
       if (fs::exists(full_path)) {
-        tiles_.push_back(MapTile(x, y, zoom_, full_path.string()));
+        tiles_.push_back(MapTile(x, y, zoom_, full_path));
 
       } else {
         const std::string url = uriForTile(x, y);
@@ -114,7 +120,7 @@ const std::vector<TileLoader::MapTile>& TileLoader::loadTiles()
           imgout.close();
 
           // Let everyone know we have an image for this tile
-          tiles_.push_back(MapTile(x, y, zoom_, full_path.string()));
+          tiles_.push_back(MapTile(x, y, zoom_, full_path));
 
         } else {
           gzerr << "Failed loading " << r.url << " with code " << r.status_code << std::endl;

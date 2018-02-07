@@ -44,7 +44,7 @@ class TileLoader {
 public:
   class MapTile {
   public:     
-    MapTile(int x, int y, int z, const std::string& path)
+    MapTile(int x, int y, int z, const boost::filesystem::path& path)
       : x_(x), y_(y), z_(z), path_(path) {}
 
     /// X tile coordinate.
@@ -57,13 +57,13 @@ public:
     int z() const { return z_; }
 
     /// Image associated with this tile.
-    const std::string& imagePath() const { return path_; }
+    const boost::filesystem::path& imagePath() const { return path_; }
 
   private:
     int x_;
     int y_;
     int z_;
-    std::string path_;
+    boost::filesystem::path path_;
   };
 
   explicit TileLoader(const std::string& cacheRoot, const std::string& service,
