@@ -23,6 +23,7 @@
 #define TILELOADER_H
 
 #include <iostream>
+#include <cmath>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -31,116 +32,134 @@
 #include <functional>
 #include <stdexcept>
 
-#include <gazebo/common/common.hh>
-#include <gazebo/gazebo.hh>
-
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 
 #include <cpr/cpr.h>
 
+namespace gzworld {
 
-class TileLoader {
-public:
-  class MapTile {
-  public:     
-    MapTile(int x, int y, int z, const boost::filesystem::path& path)
-      : x_(x), y_(y), z_(z), path_(path) {}
+  class TileLoader {
+  public:
+    struct WorldSize {
+      double width = 1;
+      double height = 1;
 
-    /// X tile coordinate.
-    int x() const { return x_; }
+      double width_above = -1;
+      double width_below = -1;
+      double height_above = -1;
+      double height_below = -1;
+    };
 
-    /// Y tile coordinate.
-    int y() const { return y_; }
-      
-    /// Z tile zoom value.
-    int z() const { return z_; }
+    class MapTile {
+    public:     
+      MapTile(int x, int y, int z, const boost::filesystem::path& path)
+        : x_(x), y_(y), z_(z), path_(path) {}
 
-    /// Image associated with this tile.
-    const boost::filesystem::path& imagePath() const { return path_; }
+      /// X tile coordinate.
+      int x() const { return x_; }
+
+      /// Y tile coordinate.
+      int y() const { return y_; }
+        
+      /// Z tile zoom value.
+      int z() const { return z_; }
+
+      /// Image associated with this tile.
+      const boost::filesystem::path& imagePath() const { return path_; }
+
+    private:
+      int x_;
+      int y_;
+      int z_;
+      boost::filesystem::path path_;
+    };
+
+    explicit TileLoader(const std::string& cacheRoot, const std::string& service,
+                        double latitude, double longitude,
+                        unsigned int zoom, const WorldSize& sizes);
+
+    /// blocking call to load all tiles
+    const std::vector<MapTile>& loadTiles();
+
+    /// Meters/pixel of the tiles.
+    double resolution() const;
+
+    /// X index of central tile.
+    int centerTileX() const { return center_tile_x_; }
+
+    /// Y index of central tile.
+    int centerTileY() const { return center_tile_y_; }
+
+    /// Fraction of a tile to offset the origin (X).
+    double originOffsetX() const { return origin_offset_x_; }
+
+    /// Fraction of a tile to offset the origin (Y).
+    double originOffsetY() const { return origin_offset_y_; }
+
+    /// Test if (lat,lon) falls inside centre tile.
+    bool insideCentreTile(double lat, double lon) const;
+
+    /// Convert lat/lon to a tile index with mercator projection.
+    static void latLonToTileCoords(double lat, double lon, unsigned int zoom,
+                                   double& x, double& y);
+
+    /// Convert latitude and zoom level to ground resolution.
+    static double zoomToResolution(double lat, unsigned int zoom);
+
+    /// Path to tiles on the server.
+    const std::string& objectURI() const { return object_uri_; }
+
+    /// Hash of the tile service provider
+    const std::string& serviceHash() const { return service_hash_; }
+
+    /// Path of the cached images
+    const std::string& cachePath() const { return cache_path_.string(); }
+
+    /// Current set of tiles.
+    const std::vector<MapTile>& tiles() const { return tiles_; }
+
+    /// Cancel all current requests.
+    void abort();
+
+    /// Size of a square image in pixels
+    static constexpr int imageSize() { return 256; }
+
+    /// Number of tiles to download
+    const int numTilesToDownload();
 
   private:
-    int x_;
-    int y_;
-    int z_;
-    boost::filesystem::path path_;
+    double latitude_;
+    double longitude_;
+    unsigned int zoom_;
+    WorldSize sizes_;
+    int center_tile_x_;
+    int center_tile_y_;
+    double origin_offset_x_;
+    double origin_offset_y_;
+    int x_tiles_below_, x_tiles_above_;
+    int y_tiles_below_, y_tiles_above_;
+
+    boost::filesystem::path cache_path_;
+
+    std::string object_uri_;
+    std::string service_hash_;
+
+    std::vector<MapTile> tiles_;
+    
+    /// URI for tile [x,y]
+    std::string uriForTile(int x, int y) const;
+
+    /// Get name for cached tile [x,y,z]
+    std::string cachedNameForTile(int x, int y, int z) const;
+
+    /// Get file path for cached tile [x,y,z].
+    boost::filesystem::path cachedPathForTile(int x, int y, int z) const;
+
+    /// Maximum number of tiles for the zoom level
+    int maxTiles() const;
   };
 
-  explicit TileLoader(const std::string& cacheRoot, const std::string& service,
-                      double latitude, double longitude,
-                      unsigned int zoom, unsigned int blocks);
-
-  /// blocking call to load all tiles
-  const std::vector<MapTile>& loadTiles();
-
-  /// Meters/pixel of the tiles.
-  double resolution() const;
-
-  /// X index of central tile.
-  int centerTileX() const { return center_tile_x_; }
-
-  /// Y index of central tile.
-  int centerTileY() const { return center_tile_y_; }
-
-  /// Fraction of a tile to offset the origin (X).
-  double originOffsetX() const { return origin_offset_x_; }
-
-  /// Fraction of a tile to offset the origin (Y).
-  double originOffsetY() const { return origin_offset_y_; }
-
-  /// Test if (lat,lon) falls inside centre tile.
-  bool insideCentreTile(double lat, double lon) const;
-
-  /// Convert lat/lon to a tile index with mercator projection.
-  static void latLonToTileCoords(double lat, double lon, unsigned int zoom,
-                                 double& x, double& y);
-
-  /// Convert latitude and zoom level to ground resolution.
-  static double zoomToResolution(double lat, unsigned int zoom);
-
-  /// Path to tiles on the server.
-  const std::string& objectURI() const { return object_uri_; }
-
-  /// Hash of the tile service provider
-  const std::string& serviceHash() const { return service_hash_; }
-
-  /// Path of the cached images
-  const std::string& cachePath() const { return cache_path_.string(); }
-
-  /// Current set of tiles.
-  const std::vector<MapTile>& tiles() const { return tiles_; }
-
-  /// Cancel all current requests.
-  void abort();
-
-private:
-  double latitude_;
-  double longitude_;
-  unsigned int zoom_;
-  int blocks_;
-  int center_tile_x_;
-  int center_tile_y_;
-  double origin_offset_x_;
-  double origin_offset_y_;
-
-  boost::filesystem::path cache_path_;
-
-  std::string object_uri_;
-  std::string service_hash_;
-
-  std::vector<MapTile> tiles_;
-  
-  /// URI for tile [x,y]
-  std::string uriForTile(int x, int y) const;
-
-  /// Get name for cached tile [x,y,z]
-  std::string cachedNameForTile(int x, int y, int z) const;
-
-  /// Get file path for cached tile [x,y,z].
-  boost::filesystem::path cachedPathForTile(int x, int y, int z) const;
-
-  /// Maximum number of tiles for the zoom level
-  int maxTiles() const;
-};
+}
 
 #endif // TILELOADER_H

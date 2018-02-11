@@ -21,16 +21,21 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   // lat = 40.267363;
   // lon = -111.633664;
   double zoom = 22;
-  unsigned int blocks = 15;
+  double width = 60;
+  double height = 200;
 
   //
   // Download Map Tiles
   //
 
-  loader_.reset(new TileLoader(root + "mapscache", object_uri, lat, lon, zoom, blocks));
+  gzworld::TileLoader::WorldSize sizes;
+  sizes.width = 60;
+  sizes.height = 200;
+
+  loader_.reset(new gzworld::TileLoader(root + "mapscache", object_uri, lat, lon, zoom, sizes));
   
-  gzmsg << "Downloading " << blocks << " blocks (" << blocks*blocks << ""
-           " tiles) around (" << lat << ", " << lon << ")."
+  gzmsg << "Downloading " << loader_->numTilesToDownload() << " tiles"
+           " around (" << lat << ", " << lon << ")."
            " This may take a minute.\n";
 
   // blocking call to make all http requests for tile images
@@ -92,8 +97,8 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   for (auto&& t : tiles) {
     // NOTE(gareth): We invert the y-axis so that positive y corresponds
     // to north. We are in XYZ->ENU convention here.
-    const int w = 256; //t.image().width();
-    const int h = 256; //t.image().height();
+    const int w = loader_->imageSize();
+    const int h = loader_->imageSize();
     const double tile_w = w * loader_->resolution();
     const double tile_h = h * loader_->resolution();
 

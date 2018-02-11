@@ -21,6 +21,8 @@
 
 #include "gazebo_satellite/tileloader.h"
 
+namespace gzworld {
+
 namespace fs = boost::filesystem;
 
 static size_t replaceRegex(const boost::regex &ex, std::string &str,
@@ -42,11 +44,10 @@ static size_t replaceRegex(const boost::regex &ex, std::string &str,
 
 TileLoader::TileLoader(const std::string& cacheRoot, const std::string& service,
                        double latitude, double longitude,
-                       unsigned int zoom, unsigned int blocks)
+                       unsigned int zoom, const WorldSize& sizes)
     : latitude_(latitude), longitude_(longitude), zoom_(zoom),
-      blocks_(blocks), object_uri_(service)
+      sizes_(sizes), object_uri_(service)
 {
-  assert(blocks_ >= 0);
 
   //
   // Setup directory structure for downloaded images
@@ -74,11 +75,45 @@ TileLoader::TileLoader(const std::string& cacheRoot, const std::string& service,
   origin_offset_x_ = x - center_tile_x_;
   origin_offset_y_ = y - center_tile_y_;
 
-  gzdbg << "center tile x: " << center_tile_x_ << std::endl;
-  gzdbg << "center tile y: " << center_tile_y_ << std::endl;
+  std::cout << "[DBG] center tile x: " << center_tile_x_ << std::endl;
+  std::cout << "[DBG] center tile y: " << center_tile_y_ << std::endl;
 
-  gzdbg << "origin offset x: " << origin_offset_x_ << std::endl;
-  gzdbg << "origin offset y: " << origin_offset_y_ << std::endl;
+  std::cout << "[DBG] origin offset x: " << origin_offset_x_ << std::endl;
+  std::cout << "[DBG] origin offset y: " << origin_offset_y_ << std::endl;
+
+  //
+  // Determine how many tiles around the center tile are needed
+  //
+
+  double width = sizes.width;
+  double height = sizes.height;
+
+  // Based on width/height, how many x block and y blocks?
+  const double width_px = width / resolution();
+  const double height_px = height / resolution();
+
+  const double width_pct = width_px / imageSize();
+  const double height_pct = height_px / imageSize();
+
+  const double x_high_pct = origin_offset_x_ + width_pct/2;
+  const double x_low_pct = origin_offset_x_ - width_pct/2;
+  const double y_high_pct = origin_offset_y_ + height_pct/2;
+  const double y_low_pct = origin_offset_y_ - height_pct/2;
+
+  x_tiles_above_ =          std::floor(x_high_pct);
+  x_tiles_below_ = std::abs(std::floor(x_low_pct));
+  y_tiles_above_ =          std::floor(y_high_pct);
+  y_tiles_below_ = std::abs(std::floor(y_low_pct));
+
+  std::cout << std::endl;
+  std::cout << "Resolution (m/px): " << resolution() << std::endl;
+  std::cout << "Width, Height (px): " << width_px << ", " << height_px << std::endl;
+  std::cout << "Width, Height (%): " << width_pct << ", " << height_pct << std::endl;
+  std::cout << "X: Low, High (%): " << x_low_pct << ", " << x_high_pct << std::endl;
+  std::cout << "Y: Low, High (%): " << y_low_pct << ", " << y_high_pct << std::endl;
+  std::cout << "X: Below, Above (tiles): " << x_tiles_below_ << ", " << x_tiles_above_ << std::endl;
+  std::cout << "Y: Below, Above (tiles): " << y_tiles_below_ << ", " << y_tiles_above_ << std::endl;
+  std::cout << std::endl;
 }
 
 // ----------------------------------------------------------------------------
@@ -91,10 +126,12 @@ const std::vector<TileLoader::MapTile>& TileLoader::loadTiles()
   // gzdbg << "loading " << blocks_ << " blocks around tile (" << center_tile_x_ << ", " << center_tile_y_ << ")\n";
 
   // determine what range of tiles we can load
-  const int min_x = std::max(0, center_tile_x_ - blocks_);
-  const int min_y = std::max(0, center_tile_y_ - blocks_);
-  const int max_x = std::min(maxTiles(), center_tile_x_ + blocks_);
-  const int max_y = std::min(maxTiles(), center_tile_y_ + blocks_);
+  const int min_x = std::max(0, center_tile_x_ - x_tiles_below_);
+  const int min_y = std::max(0, center_tile_y_ - y_tiles_below_);
+  const int max_x = std::min(maxTiles(), center_tile_x_ + x_tiles_above_);
+  const int max_y = std::min(maxTiles(), center_tile_y_ + y_tiles_above_);
+
+  std::cout << min_x << " " << min_y << " " << max_x << " " << max_y << std::endl;
 
   // initiate blocking requests
   for (int y = min_y; y <= max_y; y++) {
@@ -123,7 +160,7 @@ const std::vector<TileLoader::MapTile>& TileLoader::loadTiles()
           tiles_.push_back(MapTile(x, y, zoom_, full_path));
 
         } else {
-          gzerr << "Failed loading " << r.url << " with code " << r.status_code << std::endl;
+          std::cout << "[ERR] Failed loading " << r.url << " with code " << r.status_code << std::endl;
         }
       }
     }
@@ -189,6 +226,15 @@ void TileLoader::abort()
 }
 
 // ----------------------------------------------------------------------------
+
+const int TileLoader::numTilesToDownload()
+{
+  const int x = x_tiles_above_ + x_tiles_below_ + 1;
+  const int y = y_tiles_above_ + y_tiles_below_ + 1;
+  return x*y;
+}
+
+// ----------------------------------------------------------------------------
 // Private Methods
 // ----------------------------------------------------------------------------
 
@@ -228,3 +274,5 @@ int TileLoader::maxTiles() const
 {
   return (1 << zoom_) - 1;
 }
+
+} // namespace gzworld

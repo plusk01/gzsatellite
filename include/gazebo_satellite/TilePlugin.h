@@ -26,7 +26,7 @@ namespace gazebo {
     private:
       physics::WorldPtr parent_;
 
-      std::unique_ptr<TileLoader> loader_;
+      std::unique_ptr<gzworld::TileLoader> loader_;
 
       void createVisual(sdf::ElementPtr link);
 
