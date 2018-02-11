@@ -160,7 +160,7 @@ const std::vector<TileLoader::MapTile>& TileLoader::loadTiles()
           tiles_.push_back(MapTile(x, y, zoom_, full_path));
 
         } else {
-          std::cout << "[ERR] Failed loading " << r.url << " with code " << r.status_code << std::endl;
+          std::cerr << "Failed loading " << r.url << " with code " << r.status_code << std::endl;
         }
       }
     }
@@ -227,11 +227,37 @@ void TileLoader::abort()
 
 // ----------------------------------------------------------------------------
 
-const int TileLoader::numTilesToDownload()
+const int TileLoader::numTiles(int* x, int* y)
 {
-  const int x = x_tiles_above_ + x_tiles_below_ + 1;
-  const int y = y_tiles_above_ + y_tiles_below_ + 1;
-  return x*y;
+  const int xx = x_tiles_above_ + x_tiles_below_ + 1;
+  const int yy = y_tiles_above_ + y_tiles_below_ + 1;
+
+  if (x != nullptr) *x = xx;
+  if (y != nullptr) *y = yy;
+
+  return xx*yy;
+}
+
+// ----------------------------------------------------------------------------
+
+const std::string TileLoader::hash() const
+{
+  std::ostringstream os;
+
+  // The service URI makes it unique
+  os << serviceHash();
+
+  // geographic info
+  os << latitude_ << longitude_ << zoom_;
+
+  // size information
+  os << sizes_.width << sizes_.height;
+  os << sizes_.width_above << sizes_.width_below;
+  os << sizes_.height_above << sizes_.height_below;
+
+  std::hash<std::string> hash_fn;
+
+  return std::to_string(hash_fn(os.str()));
 }
 
 // ----------------------------------------------------------------------------

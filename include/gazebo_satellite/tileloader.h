@@ -125,8 +125,11 @@ namespace gzworld {
     /// Size of a square image in pixels
     static constexpr int imageSize() { return 256; }
 
-    /// Number of tiles to download
-    const int numTilesToDownload();
+    /// Number of tiles that will be used
+    const int numTiles(int* x = nullptr, int* y = nullptr);
+
+    // A unique hash of this loader's parameters
+    const std::string hash() const;
 
   private:
     double latitude_;

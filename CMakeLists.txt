@@ -177,7 +177,7 @@ add_dependencies(TilePlugin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTE
 add_dependencies(${PROJECT_NAME}_create ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(TilePlugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${CPR_LIBRARIES})
+target_link_libraries(TilePlugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${CPR_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME}_create ${catkin_LIBRARIES} ${CPR_LIBRARIES} ${OpenCV_LIBS})
 
 

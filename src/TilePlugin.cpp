@@ -14,27 +14,31 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
 {
   this->parent_ = _parent;
 
+  std::string service, name;
+  double lat, lon, zoom;
 
-  std::string object_uri = "http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
-  double lat = 40.267463;
-  double lon = -111.635655;
-  // lat = 40.267363;
-  // lon = -111.633664;
-  double zoom = 22;
-  double width = 60;
-  double height = 200;
+  ros::NodeHandle nh("/gzworld");
+  nh.param<std::string>("tileserver", service, "http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}");
+  nh.param<std::string>("name", name, "Rock Canyon Park");
+  nh.param<double>("latitude", lat, 40.267463);
+  nh.param<double>("longitude", lon, -111.635655);
+  nh.param<double>("zoom", zoom, 22);
 
   //
   // Download Map Tiles
   //
 
   gzworld::TileLoader::WorldSize sizes;
-  sizes.width = 60;
-  sizes.height = 200;
+  sizes.width = 300;
+  sizes.height = 300;
 
-  loader_.reset(new gzworld::TileLoader(root + "mapscache", object_uri, lat, lon, zoom, sizes));
+  loader_.reset(new gzworld::TileLoader(root + "mapscache", service, lat, lon, zoom, sizes));
+
+  // check if world model already exists
+  std::string imageName = loader_->hash();
+
   
-  gzmsg << "Downloading " << loader_->numTilesToDownload() << " tiles"
+  gzmsg << "Downloading " << loader_->numTiles() << " tiles"
            " around (" << lat << ", " << lon << ")."
            " This may take a minute.\n";
 
@@ -47,44 +51,73 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   // Set up directory structure for OGRE scripts
   //
 
-  // Create OGRE scripts directory
   fs::path materials_dir(root + "materials");
+
+  // Create OGRE scripts directory
   fs::path scripts_dir(materials_dir/"scripts");
   fs::create_directories(scripts_dir);
 
-  // Create a symlink to the current tile provider's cache directory
+  // Create a textures dir for stitched map images
   fs::path textures_dir(materials_dir/"textures");
-  fs::remove(textures_dir); // TODO: should probably make sure its a symlink
-  fs::create_symlink(loader_->cachePath(), textures_dir);
+  fs::create_directories(textures_dir);
 
   //
-  // Generate a terrain model using the tiles
+  // Create the necessary components of the model
   //
 
-  // for (auto&& t : tiles) {
-  //   std::cout << std::endl;
-  //   std::cout << "Tile (" << t.x() << ", " << t.y() << ", " << t.z() << ")" << std::endl;
-  //   std::cout << "\t" << t.imagePath() << std::endl;
-  // }
+  sdf::SDFPtr modelSDF = createModel(name, sizes.width, sizes.height, tiles, scripts_dir, textures_dir);
 
-  std::cout << loader_->resolution() << std::endl;
+  this->parent_->InsertModelSDF(*modelSDF);
+}
+
+// ----------------------------------------------------------------------------
+// Private Methods
+// ----------------------------------------------------------------------------
+
+sdf::SDFPtr TilePlugin::createModel(const std::string& name, double width, double height, std::vector<MapTile> tiles, fs::path scripts_dir, fs::path textures_dir)
+{
+
+  // Sort the tiles so that they are in an ordered
+  // row major, matrix-like representation
+  std::sort(tiles.begin(), tiles.end(),
+    [](const MapTile& left, const MapTile& right) {
+      return (left.y() < right.y()) || (left.y() == right.y() && left.x() < right.x());
+    });
+
+  //
+  // Process the tiles and create one texture image
+  //
+
+  auto img = stitch(tiles);
+
+  //
+  // Save the image in the proper location
+  //
+
+  // get hashed image name using tiles for caching
+  std::string imgName = loader_->hash();
+
+  std::vector<int> compression_params;
+  compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+  compression_params.push_back(60);
+
+  std::string imgPath = (textures_dir/imgName).string() + ".jpg";
+  cv::imwrite(imgPath, img, compression_params);
+
+  //
+  // Create an OGRE script to go with this texture
+  //
+
+  std::string scriptPath = (scripts_dir/imgName).string() + ".material";
+
+  // Create an OGRE script for this tile if it does not already exist
+  if (!fs::exists(scriptPath))
+    createScript(scriptPath, imgName+".jpg");
 
 
-
-
-
-
-  for (auto&& t : tiles) {
-    std::string materialName = t.imagePath().stem().string();
-    std::string scriptPath = (scripts_dir/materialName).string() + ".material";
-
-    // Create an OGRE script for this tile if it does not already exist
-    if (!fs::exists(scriptPath))
-      createScript(scriptPath, t.imagePath());
-  }
-
-
-
+  //
+  //
+  //
 
   // Create a new, empty SDF model with a single link
   sdf::SDFPtr modelSDF(new sdf::SDF);
@@ -93,120 +126,116 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   sdf::ElementPtr base_link = model->AddElement("link");
 
 
+  //
+  // Pose
+  //
 
-  for (auto&& t : tiles) {
-    // NOTE(gareth): We invert the y-axis so that positive y corresponds
-    // to north. We are in XYZ->ENU convention here.
-    const int w = loader_->imageSize();
-    const int h = loader_->imageSize();
-    const double tile_w = w * loader_->resolution();
-    const double tile_h = h * loader_->resolution();
+  msgs::Vector3d *position = new msgs::Vector3d();
+  position->set_x(0);
+  position->set_y(0);
+  position->set_z(0);
 
-    // std::cout << "tile: (" << tile_w << ", " << tile_h << ")" << std::endl;
+  msgs::Quaternion *orientation = new msgs::Quaternion();
+  orientation->set_w(1);
 
-    // Shift back such that (0, 0) corresponds to the exact latitude and
-    // longitude the tile loader requested.
-    // This is the local origin, in the frame of the map node.
-    const double origin_x = loader_->originOffsetX() * tile_w;
-    const double origin_y = loader_->originOffsetY() * tile_h;
+  msgs::Pose *pose = new msgs::Pose;
+  pose->set_allocated_orientation(orientation);
+  pose->set_allocated_position(position);
 
-    // std::cout << "Origin: (" << origin_x << ", " << origin_y << ")" << std::endl;
+  ////////////////
+  
+  //
+  // Geometry
+  //
 
-    // determine location of this tile, flipping y in the process
-    // const double x = (t.x() - loader_->centerTileX()) * tile_w + origin_x;
-    // const double y = -(t.y() - loader_->centerTileY()) * tile_h + origin_y;
+  msgs::Vector3d *normal = new msgs::Vector3d();
+  normal->set_x(0);
+  normal->set_y(0);
+  normal->set_z(1);
 
-    const double x =  (loader_->centerTileX() - t.x())*tile_w - tile_w/2.0 + origin_x;
-    const double y = -(loader_->centerTileY() - t.y())*tile_h + tile_h/2.0 - origin_y;
+  msgs::Vector2d *size = new msgs::Vector2d();
+  size->set_x(width);
+  size->set_y(height);
 
-    // std::cout << "loc: (" << x << ", " << y << ")" << std::endl;
+  msgs::PlaneGeom *plane = new msgs::PlaneGeom();
+  plane->set_allocated_normal(normal);
+  plane->set_allocated_size(size);
 
-    //  don't re-use any ids
-    const std::string name_suffix =
-        std::to_string(t.x()) + "_" + std::to_string(t.y()) + "_" +
-        std::to_string(0) + "_" + std::to_string(0);
+  msgs::Geometry *geo = new msgs::Geometry();
+  geo->set_type(msgs::Geometry_Type_PLANE);
+  geo->set_allocated_plane(plane);
 
+  ///////////////
 
+  //
+  // Material
+  //
 
-        //
-        // Pose
-        //
+  msgs::Material_Script *script = new msgs::Material_Script();
+  std::string *uri1 = script->add_uri();
+  *uri1 = "file://" + fs::absolute(scripts_dir).string();
+  std::string *uri2 = script->add_uri();
+  *uri2 = "file://" + fs::absolute(textures_dir).string();
+  script->set_name(imgName);
 
-        msgs::Vector3d *position = new msgs::Vector3d();
-        position->set_x(-x);
-        position->set_y(-y);
-        position->set_z(0);
+  msgs::Material *material = new msgs::Material();
+  material->set_allocated_script(script);
 
-        msgs::Quaternion *orientation = new msgs::Quaternion();
-        orientation->set_w(1);
+  //////////////
 
-        msgs::Pose *pose = new msgs::Pose;
-        pose->set_allocated_orientation(orientation);
-        pose->set_allocated_position(position);
+  msgs::Visual visual;
+  visual.set_name(imgName);
+  visual.set_allocated_geometry(geo);
+  visual.set_allocated_pose(pose);
+  visual.set_allocated_material(material);
 
-        ////////////////
-        
-        //
-        // Geometry
-        //
-
-        msgs::Vector3d *normal = new msgs::Vector3d();
-        normal->set_x(0);
-        normal->set_y(0);
-        normal->set_z(1);
-
-        msgs::Vector2d *size = new msgs::Vector2d();
-        size->set_x(tile_w);
-        size->set_y(tile_h);
-
-        msgs::PlaneGeom *plane = new msgs::PlaneGeom();
-        plane->set_allocated_normal(normal);
-        plane->set_allocated_size(size);
-
-        msgs::Geometry *geo = new msgs::Geometry();
-        geo->set_type(msgs::Geometry_Type_PLANE);
-        geo->set_allocated_plane(plane);
-
-        ///////////////
-
-        //
-        // Material
-        //
-
-        msgs::Material_Script *script = new msgs::Material_Script();
-        std::string *uri1 = script->add_uri();
-        *uri1 = "file:///home/plusk01/.ros/gzsatellite/materials/scripts/";
-        std::string *uri2 = script->add_uri();
-        *uri2 = "file:///home/plusk01/.ros/gzsatellite/materials/textures/";
-        script->set_name(t.imagePath().stem().string());
-
-        msgs::Material *material = new msgs::Material();
-        material->set_allocated_script(script);
-
-        //////////////
-
-        msgs::Visual visual;
-        visual.set_name(t.imagePath().stem().string());
-        visual.set_allocated_geometry(geo);
-        visual.set_allocated_pose(pose);
-        visual.set_allocated_material(material);
-
-        sdf::ElementPtr visualElem = msgs::VisualToSDF(visual);
-        base_link->InsertElement(visualElem);
-
-
-
-  }
+  sdf::ElementPtr visualElem = msgs::VisualToSDF(visual);
+  base_link->InsertElement(visualElem);
 
 
   ///////////////////////////
 
-  // createVisual(base_link);
-
-  model->GetAttribute("name")->Set("parker_test");
+  model->GetAttribute("name")->Set(name);
   model->AddElement("static")->Set("true");
 
-  this->parent_->InsertModelSDF(*modelSDF);
+  return modelSDF;
+
+}
+
+// ----------------------------------------------------------------------------
+
+cv::Mat TilePlugin::stitch(const std::vector<MapTile>& tiles)
+{
+  // find out how many tiles are in the x and y directions
+  int cols, rows;
+  int numTiles = loader_->numTiles(&cols, &rows);
+
+  // Create an empty image with the proper dimensions
+  int width = cols*loader_->imageSize();
+  int height = rows*loader_->imageSize();
+  cv::Mat result = cv::Mat::zeros(height, width, CV_8UC3);
+
+  // Loop through each sorted tile and place appropriately in image
+  for (int i=0; i<numTiles; i++)
+  {
+    cv::Mat tile = cv::imread(tiles[i].imagePath().string(), CV_LOAD_IMAGE_COLOR);
+
+    // calculate image position
+    const int tileCol = i%cols;
+    const int tileRow = i/cols;
+    const int startCol = tileCol*loader_->imageSize();
+    const int startRow = tileRow*loader_->imageSize();
+
+    // Create a region of interest into the result image
+    cv::Mat masked(result, cv::Rect(startCol, startRow,
+                              loader_->imageSize(), loader_->imageSize()));
+
+    // Copy this tile into the result
+    tile.copyTo(masked);
+  }
+
+
+  return result;
 }
 
 // ----------------------------------------------------------------------------
@@ -241,76 +270,6 @@ void TilePlugin::createScript(const std::string& path, const fs::path& imgPath)
 }
 
 // ----------------------------------------------------------------------------
-
-void TilePlugin::createVisual(sdf::ElementPtr link)
-{
-
-  //
-  // Pose
-  //
-
-  msgs::Vector3d *position = new msgs::Vector3d();
-  position->set_x(0);
-  position->set_y(0);
-  position->set_z(0);
-
-  msgs::Quaternion *orientation = new msgs::Quaternion();
-  orientation->set_w(1);
-
-  msgs::Pose *pose = new msgs::Pose;
-  pose->set_allocated_orientation(orientation);
-  pose->set_allocated_position(position);
-
-  ////////////////
-  
-  //
-  // Geometry
-  //
-
-  msgs::Vector3d *normal = new msgs::Vector3d();
-  normal->set_x(0);
-  normal->set_y(0);
-  normal->set_z(1);
-
-  msgs::Vector2d *size = new msgs::Vector2d();
-  size->set_x(300);
-  size->set_y(300);
-
-  msgs::PlaneGeom *plane = new msgs::PlaneGeom();
-  plane->set_allocated_normal(normal);
-  plane->set_allocated_size(size);
-
-  msgs::Geometry *geo = new msgs::Geometry();
-  geo->set_type(msgs::Geometry_Type_PLANE);
-  geo->set_allocated_plane(plane);
-
-  ///////////////
-
-  //
-  // Material
-  //
-
-  msgs::Material_Script *script = new msgs::Material_Script();
-  std::string *uri1 = script->add_uri();
-  *uri1 = "file:///home/plusk01/.ros/gzsatellite/materials/scripts/";
-  std::string *uri2 = script->add_uri();
-  *uri2 = "file:///home/plusk01/.ros/gzsatellite/materials/textures/";
-  script->set_name("myimg");
-
-  msgs::Material *material = new msgs::Material();
-  material->set_allocated_script(script);
-
-  //////////////
-
-  msgs::Visual visual;
-  visual.set_name("vtst");
-  visual.set_allocated_geometry(geo);
-  visual.set_allocated_pose(pose);
-  visual.set_allocated_material(material);
-
-  sdf::ElementPtr visualElem = msgs::VisualToSDF(visual);
-  link->InsertElement(visualElem);
-}
 
 GZ_REGISTER_WORLD_PLUGIN(TilePlugin)
 }
