@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(gazebo_satellite)
+project(gzsatellite)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
 set(CMAKE_CXX_STANDARD 11)
@@ -143,7 +143,7 @@ add_subdirectory(${CPR_DIR}/src ${CPR_DIR}/build EXCLUDE_FROM_ALL)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES gazebo_satellite
+#  LIBRARIES gzsatellite
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
@@ -219,7 +219,7 @@ target_link_libraries(TilePlugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${CPR_L
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_gazebo_satellite.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_gzsatellite.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

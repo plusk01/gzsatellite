@@ -1,8 +1,8 @@
-#include "gazebo_satellite/modelcreator.h"
+#include "gzsatellite/modelcreator.h"
 
 namespace fs = boost::filesystem;
 
-namespace gzworld {
+namespace gzsatellite {
 
 ModelCreator::ModelCreator(const GeoParams& params, const std::string& root) :
   geo_params_(params)

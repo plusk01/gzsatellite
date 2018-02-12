@@ -17,7 +17,7 @@
 
 #include "tileloader.h"
 
-namespace gzworld {
+namespace gzsatellite {
 
   struct GeoParams
   {

@@ -1,4 +1,4 @@
-#include "gazebo_satellite/TilePlugin.h"
+#include "gzsatellite/TilePlugin.h"
 
 namespace fs = boost::filesystem;
 
@@ -20,7 +20,7 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   double width, height;
   double shift_x, shift_y;
 
-  ros::NodeHandle nh("/gzworld");
+  ros::NodeHandle nh("/gzsatellite");
   // Geographic paramters
   nh.param<std::string>("tileserver", service, "http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}");
   nh.param<double>("latitude", lat, 40.267463);
@@ -43,7 +43,7 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   width = 300;
   height = 300;
 
-  gzworld::GeoParams params;
+  gzsatellite::GeoParams params;
   params.tileserver   = service;
   params.lat          = lat;
   params.lon          = lon;
@@ -53,7 +53,7 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   params.shift_x      = shift_x;
   params.shift_y      = shift_y;
 
-  gzworld::ModelCreator m(params, root);
+  gzsatellite::ModelCreator m(params, root);
 
   //
   // Create a world model and add it to the Gazebo World

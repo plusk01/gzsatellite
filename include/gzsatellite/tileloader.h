@@ -37,7 +37,7 @@
 
 #include <cpr/cpr.h>
 
-namespace gzworld {
+namespace gzsatellite {
 
   class TileLoader {
   public:

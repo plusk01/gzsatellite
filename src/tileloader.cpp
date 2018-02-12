@@ -19,9 +19,9 @@
  *  Created on: 07/09/2014
  */
 
-#include "gazebo_satellite/tileloader.h"
+#include "gzsatellite/tileloader.h"
 
-namespace gzworld {
+namespace gzsatellite {
 
 namespace fs = boost::filesystem;
 
@@ -331,4 +331,4 @@ void TileLoader::tileRange(int& min_x, int& max_x, int& min_y, int& max_y) const
   max_y = std::min(maxTiles(), center_tile_y_ + y_tiles_above_);
 }
 
-} // namespace gzworld
+} // namespace gzsatellite

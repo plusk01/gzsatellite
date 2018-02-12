@@ -5,7 +5,7 @@
       <uri>model://sun</uri>
     </include>
 
-    <plugin name="gazebo_satellite" filename="libTilePlugin.so"/>
+    <plugin name="gzsatellite" filename="libTilePlugin.so"/>
 
     <physics type="ode">
             <!--go as fast as possible!-->

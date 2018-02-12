@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-  <group ns="/gzworld">
+  <group ns="/gzsatellite">
     <param name="name" type="string" value="Rock Canyon Park" />
     <param name="jpg_quality" type="double" value="60" />
     <param name="tileserver" type="string" value="http://mt1.google.com/vt/lyrs=s&amp;x={x}&amp;y={y}&amp;z={z}" />
@@ -16,7 +16,7 @@
 
   <!-- Start Gazebo -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name"    value="$(find gazebo_satellite)/worlds/satellite.world"/>
+    <arg name="world_name"    value="$(find gzsatellite)/worlds/satellite.world"/>
     <arg name="debug"         value="false"/>
     <arg name="gui"           value="true"/>
     <arg name="paused"        value="true"/>
