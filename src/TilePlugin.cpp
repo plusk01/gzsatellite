@@ -39,10 +39,6 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   // Create the model creator with parameters
   //
 
-  shift_y = -0.20;
-  width = 300;
-  height = 300;
-
   gzsatellite::GeoParams params;
   params.tileserver   = service;
   params.lat          = lat;
