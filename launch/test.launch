@@ -7,6 +7,7 @@
     <param name="latitude" type="double" value="40.267463" />
     <param name="longitude" type="double" value="-111.635655" />
     <param name="zoom" type="double" value="21" />
+    <param name="jpg_quality" type="double" value="60" />
   </group>
 
   <!-- Start Gazebo -->

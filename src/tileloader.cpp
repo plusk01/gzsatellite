@@ -118,20 +118,14 @@ TileLoader::TileLoader(const std::string& cacheRoot, const std::string& service,
 
 // ----------------------------------------------------------------------------
 
-const std::vector<TileLoader::MapTile>& TileLoader::loadTiles()
+const std::vector<TileLoader::MapTile>& TileLoader::loadTiles(bool download)
 {
   // discard previous set of tiles and all pending requests
   abort();
 
-  // gzdbg << "loading " << blocks_ << " blocks around tile (" << center_tile_x_ << ", " << center_tile_y_ << ")\n";
-
   // determine what range of tiles we can load
-  const int min_x = std::max(0, center_tile_x_ - x_tiles_below_);
-  const int min_y = std::max(0, center_tile_y_ - y_tiles_below_);
-  const int max_x = std::min(maxTiles(), center_tile_x_ + x_tiles_above_);
-  const int max_y = std::min(maxTiles(), center_tile_y_ + y_tiles_above_);
-
-  std::cout << min_x << " " << min_y << " " << max_x << " " << max_y << std::endl;
+  int min_x, max_x, min_y, max_y;
+  tileRange(min_x, max_x, min_y, max_y);
 
   // initiate blocking requests
   for (int y = min_y; y <= max_y; y++) {
@@ -139,8 +133,8 @@ const std::vector<TileLoader::MapTile>& TileLoader::loadTiles()
       // Generate filename
       const fs::path full_path = cachedPathForTile(x, y, zoom_);
 
-      // Check if tile is already in the cache
-      if (fs::exists(full_path)) {
+      // Check if tile is already in the cache (or if we shouldn't download)
+      if (fs::exists(full_path) || !download) {
         tiles_.push_back(MapTile(x, y, zoom_, full_path));
 
       } else {
@@ -205,6 +199,19 @@ void TileLoader::latLonToTileCoords(double lat, double lon, unsigned int zoom,
 
 // ----------------------------------------------------------------------------
 
+// Returns lat/lon of NW corner. x+0.5,y+0.5 would return lat/lon of center
+void TileLoader::tileCoordsToLatLon(double x, double y, unsigned int zoom,
+                                    double& lat, double& lon)
+{
+  unsigned int n = (1 << zoom);
+  lon = x / n * 360.0 - 180.0;
+
+  const double a = M_PI - 2.0 * M_PI * y / n;
+  lat = 180.0 / M_PI * atan(0.5 * (exp(a) - exp(-a)));
+}
+
+// ----------------------------------------------------------------------------
+
 double TileLoader::resolution() const
 {
   return zoomToResolution(latitude_, zoom_);
@@ -227,7 +234,25 @@ void TileLoader::abort()
 
 // ----------------------------------------------------------------------------
 
-const int TileLoader::numTiles(int* x, int* y)
+const int TileLoader::numTilesToDownload() const
+{
+  // determine what range of tiles we can load
+  int min_x, max_x, min_y, max_y;
+  tileRange(min_x, max_x, min_y, max_y);
+
+  // Simply count how many tiles don't have an image on file
+  unsigned int n = 0;
+  for (int y = min_y; y <= max_y; y++)
+    for (int x = min_x; x <= max_x; x++)
+      if (!fs::exists(cachedPathForTile(x, y, zoom_)))
+        n++;
+
+  return n;
+}
+
+// ----------------------------------------------------------------------------
+
+const int TileLoader::numTiles(int* x, int* y) const
 {
   const int xx = x_tiles_above_ + x_tiles_below_ + 1;
   const int yy = y_tiles_above_ + y_tiles_below_ + 1;
@@ -299,6 +324,17 @@ fs::path TileLoader::cachedPathForTile(int x, int y, int z) const
 int TileLoader::maxTiles() const
 {
   return (1 << zoom_) - 1;
+}
+
+// ----------------------------------------------------------------------------
+
+void TileLoader::tileRange(int& min_x, int& max_x, int& min_y, int& max_y) const
+{
+  // determine what range of tiles we can load
+  min_x = std::max(0, center_tile_x_ - x_tiles_below_);
+  min_y = std::max(0, center_tile_y_ - y_tiles_below_);
+  max_x = std::min(maxTiles(), center_tile_x_ + x_tiles_above_);
+  max_y = std::min(maxTiles(), center_tile_y_ + y_tiles_above_);
 }
 
 } // namespace gzworld

@@ -157,28 +157,26 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${CPR_INCLUDE_DIRS})
 
 ## Declare a C++ library
-add_library(TilePlugin SHARED src/TilePlugin.cpp src/tileloader.cpp)
+add_library(TilePlugin SHARED src/TilePlugin.cpp src/tileloader.cpp src/modelcreator.cpp)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_create src/creator_node.cpp src/creator.cpp src/tileloader.cpp)
+# add_executable(${PROJECT_NAME}_create src/creator_node.cpp src/creator.cpp src/tileloader.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-set_target_properties(${PROJECT_NAME}_create PROPERTIES OUTPUT_NAME create PREFIX "")
+# set_target_properties(${PROJECT_NAME}_create PROPERTIES OUTPUT_NAME create PREFIX "")
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(TilePlugin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(${PROJECT_NAME}_create ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(TilePlugin ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES} ${CPR_LIBRARIES} ${OpenCV_LIBS})
-target_link_libraries(${PROJECT_NAME}_create ${catkin_LIBRARIES} ${CPR_LIBRARIES} ${OpenCV_LIBS})
 
 
 #############

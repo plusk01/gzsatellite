@@ -80,7 +80,7 @@ namespace gzworld {
                         unsigned int zoom, const WorldSize& sizes);
 
     /// blocking call to load all tiles
-    const std::vector<MapTile>& loadTiles();
+    const std::vector<MapTile>& loadTiles(bool download = true);
 
     /// Meters/pixel of the tiles.
     double resolution() const;
@@ -104,6 +104,11 @@ namespace gzworld {
     static void latLonToTileCoords(double lat, double lon, unsigned int zoom,
                                    double& x, double& y);
 
+    /// Convert tile x/y index to lat/lon of NW corner of tile
+    static void tileCoordsToLatLon(double x, double y,
+                                    unsigned int zoom,
+                                    double& lat, double& lon);
+
     /// Convert latitude and zoom level to ground resolution.
     static double zoomToResolution(double lat, unsigned int zoom);
 
@@ -125,8 +130,10 @@ namespace gzworld {
     /// Size of a square image in pixels
     static constexpr int imageSize() { return 256; }
 
+    const int numTilesToDownload() const;
+
     /// Number of tiles that will be used
-    const int numTiles(int* x = nullptr, int* y = nullptr);
+    const int numTiles(int* x = nullptr, int* y = nullptr) const;
 
     // A unique hash of this loader's parameters
     const std::string hash() const;
@@ -161,6 +168,9 @@ namespace gzworld {
 
     /// Maximum number of tiles for the zoom level
     int maxTiles() const;
+
+    /// Determine the tile index range for x, y
+    void tileRange(int& min_x, int& max_x, int& min_y, int& max_y) const;
   };
 
 }
