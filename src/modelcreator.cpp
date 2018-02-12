@@ -89,8 +89,8 @@ sdf::SDFPtr ModelCreator::createModel(const std::string& name, unsigned int qual
   // Create the base link
   sdf::ElementPtr base_link = model->AddElement("link");
 
-  double xpos = geo_params_.shift_x*loader_->imageSize();
-  double ypos = geo_params_.shift_y*loader_->imageSize();
+  double xpos = geo_params_.shift_x*geo_params_.width;
+  double ypos = geo_params_.shift_y*geo_params_.height;
 
   sdf::ElementPtr collisionElem = createCollision(xpos, ypos);
   sdf::ElementPtr visualElem    = createVisual(xpos, ypos);
@@ -99,6 +99,26 @@ sdf::SDFPtr ModelCreator::createModel(const std::string& name, unsigned int qual
   base_link->InsertElement(visualElem);
 
   return modelSDF;
+}
+
+// ----------------------------------------------------------------------------
+
+void ModelCreator::getOriginLatLon(double& lat, double& lon)
+{
+  // Convert percentage shift from center to meters from center
+  double xpos = geo_params_.shift_x*geo_params_.width;
+  double ypos = geo_params_.shift_y*geo_params_.height;
+
+  // Size of square the tile in meters
+  double tileSize = loader_->resolution()*loader_->imageSize();
+
+  double x = loader_->centerTileX() + (xpos/tileSize);
+  double y = loader_->centerTileY() + (ypos/tileSize);
+
+  x += loader_->originOffsetX();
+  y += loader_->originOffsetY();
+
+  loader_->tileCoordsToLatLon(x, y, geo_params_.zoom, lat, lon);
 }
 
 // ----------------------------------------------------------------------------

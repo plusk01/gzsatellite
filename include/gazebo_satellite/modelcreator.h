@@ -37,6 +37,8 @@ namespace gzworld {
     ModelCreator(const GeoParams& params, const std::string& root);
 
     sdf::SDFPtr createModel(const std::string& name, unsigned int quality);
+
+    void getOriginLatLon(double& lat, double& lon);
     
   private:
     // tile loader data

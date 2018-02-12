@@ -39,7 +39,7 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   // Create the model creator with parameters
   //
 
-  shift_y = -0.225;
+  shift_y = -0.20;
   width = 300;
   height = 300;
 
@@ -62,8 +62,11 @@ void TilePlugin::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf)
   auto modelSDF = m.createModel(name, quality);
   this->parent_->InsertModelSDF(*modelSDF);
 
-  gzmsg << "World model '" << name << "' (";
-  gzmsg << std::setprecision(10) << lat << "," << lon << ") created." << std::endl;
+  gzmsg << "World model '" << name << "' (" << std::setprecision(10) << lat << "," << lon << ") created." << std::endl;
+
+  double originLat, originLon;
+  m.getOriginLatLon(originLat, originLon);
+  gzdbg << std::setprecision(10) << originLat << "," << originLon << std::endl;
 
   // std::cout << modelSDF->ToString() << std::endl;
 }
