@@ -41,16 +41,6 @@ namespace gzworld {
 
   class TileLoader {
   public:
-    struct WorldSize {
-      double width = 1;
-      double height = 1;
-
-      double width_above = -1;
-      double width_below = -1;
-      double height_above = -1;
-      double height_below = -1;
-    };
-
     class MapTile {
     public:     
       MapTile(int x, int y, int z, const boost::filesystem::path& path)
@@ -77,7 +67,7 @@ namespace gzworld {
 
     explicit TileLoader(const std::string& cacheRoot, const std::string& service,
                         double latitude, double longitude,
-                        unsigned int zoom, const WorldSize& sizes);
+                        unsigned int zoom, double width, double height);
 
     /// blocking call to load all tiles
     const std::vector<MapTile>& loadTiles(bool download = true);
@@ -142,7 +132,7 @@ namespace gzworld {
     double latitude_;
     double longitude_;
     unsigned int zoom_;
-    WorldSize sizes_;
+    double width_, height_;
     int center_tile_x_;
     int center_tile_y_;
     double origin_offset_x_;

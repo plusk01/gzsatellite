@@ -12,17 +12,9 @@ ModelCreator::ModelCreator(const GeoParams& params, const std::string& root) :
   // Create a new tile loader object
   //
 
-  TileLoader::WorldSize sizes;
-  sizes.width = params.width;
-  sizes.height = params.height;
-  sizes.width_below = params.width_below;
-  sizes.width_above = params.width_above;
-  sizes.height_below = params.height_below;
-  sizes.height_above = params.height_above;
-
   loader_.reset(new TileLoader(root+"/mapscache", params.tileserver,
                                 params.lat, params.lon, params.zoom,
-                                sizes));
+                                params.width, params.height));
 
   //
   // Setup proper directory structure
@@ -97,8 +89,11 @@ sdf::SDFPtr ModelCreator::createModel(const std::string& name, unsigned int qual
   // Create the base link
   sdf::ElementPtr base_link = model->AddElement("link");
 
-  sdf::ElementPtr collisionElem = createCollision();
-  sdf::ElementPtr visualElem    = createVisual();
+  double xpos = geo_params_.shift_x*loader_->imageSize();
+  double ypos = geo_params_.shift_y*loader_->imageSize();
+
+  sdf::ElementPtr collisionElem = createCollision(xpos, ypos);
+  sdf::ElementPtr visualElem    = createVisual(xpos, ypos);
 
   base_link->InsertElement(collisionElem);
   base_link->InsertElement(visualElem);
@@ -222,7 +217,7 @@ void ModelCreator::createWorldScript()
 
 // ----------------------------------------------------------------------------
 
-sdf::ElementPtr ModelCreator::createCollision()
+sdf::ElementPtr ModelCreator::createCollision(double xpos, double ypos)
 {
 
   //
@@ -230,8 +225,8 @@ sdf::ElementPtr ModelCreator::createCollision()
   //
 
   gazebo::msgs::Vector3d *position = new gazebo::msgs::Vector3d();
-  position->set_x(0);
-  position->set_y(0);
+  position->set_x(xpos);
+  position->set_y(ypos);
   position->set_z(0);
 
   gazebo::msgs::Quaternion *orientation = new gazebo::msgs::Quaternion();
@@ -277,7 +272,7 @@ sdf::ElementPtr ModelCreator::createCollision()
 
 // ----------------------------------------------------------------------------
 
-sdf::ElementPtr ModelCreator::createVisual()
+sdf::ElementPtr ModelCreator::createVisual(double xpos, double ypos)
 {
 
   //
@@ -285,8 +280,8 @@ sdf::ElementPtr ModelCreator::createVisual()
   //
 
   gazebo::msgs::Vector3d *position = new gazebo::msgs::Vector3d();
-  position->set_x(0);
-  position->set_y(0);
+  position->set_x(xpos);
+  position->set_y(ypos);
   position->set_z(0);
 
   gazebo::msgs::Quaternion *orientation = new gazebo::msgs::Quaternion();

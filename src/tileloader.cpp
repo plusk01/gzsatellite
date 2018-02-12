@@ -44,9 +44,9 @@ static size_t replaceRegex(const boost::regex &ex, std::string &str,
 
 TileLoader::TileLoader(const std::string& cacheRoot, const std::string& service,
                        double latitude, double longitude,
-                       unsigned int zoom, const WorldSize& sizes)
+                       unsigned int zoom, double width, double height)
     : latitude_(latitude), longitude_(longitude), zoom_(zoom),
-      sizes_(sizes), object_uri_(service)
+      width_(width), height_(height), object_uri_(service)
 {
 
   //
@@ -75,18 +75,15 @@ TileLoader::TileLoader(const std::string& cacheRoot, const std::string& service,
   origin_offset_x_ = x - center_tile_x_;
   origin_offset_y_ = y - center_tile_y_;
 
-  std::cout << "[DBG] center tile x: " << center_tile_x_ << std::endl;
-  std::cout << "[DBG] center tile y: " << center_tile_y_ << std::endl;
+  // std::cout << "[DBG] center tile x: " << center_tile_x_ << std::endl;
+  // std::cout << "[DBG] center tile y: " << center_tile_y_ << std::endl;
 
-  std::cout << "[DBG] origin offset x: " << origin_offset_x_ << std::endl;
-  std::cout << "[DBG] origin offset y: " << origin_offset_y_ << std::endl;
+  // std::cout << "[DBG] origin offset x: " << origin_offset_x_ << std::endl;
+  // std::cout << "[DBG] origin offset y: " << origin_offset_y_ << std::endl;
 
   //
   // Determine how many tiles around the center tile are needed
   //
-
-  double width = sizes.width;
-  double height = sizes.height;
 
   // Based on width/height, how many x block and y blocks?
   const double width_px = width / resolution();
@@ -105,15 +102,15 @@ TileLoader::TileLoader(const std::string& cacheRoot, const std::string& service,
   y_tiles_above_ =          std::floor(y_high_pct);
   y_tiles_below_ = std::abs(std::floor(y_low_pct));
 
-  std::cout << std::endl;
-  std::cout << "Resolution (m/px): " << resolution() << std::endl;
-  std::cout << "Width, Height (px): " << width_px << ", " << height_px << std::endl;
-  std::cout << "Width, Height (%): " << width_pct << ", " << height_pct << std::endl;
-  std::cout << "X: Low, High (%): " << x_low_pct << ", " << x_high_pct << std::endl;
-  std::cout << "Y: Low, High (%): " << y_low_pct << ", " << y_high_pct << std::endl;
-  std::cout << "X: Below, Above (tiles): " << x_tiles_below_ << ", " << x_tiles_above_ << std::endl;
-  std::cout << "Y: Below, Above (tiles): " << y_tiles_below_ << ", " << y_tiles_above_ << std::endl;
-  std::cout << std::endl;
+  // std::cout << std::endl;
+  // std::cout << "Resolution (m/px): " << resolution() << std::endl;
+  // std::cout << "Width, Height (px): " << width_px << ", " << height_px << std::endl;
+  // std::cout << "Width, Height (%): " << width_pct << ", " << height_pct << std::endl;
+  // std::cout << "X: Low, High (%): " << x_low_pct << ", " << x_high_pct << std::endl;
+  // std::cout << "Y: Low, High (%): " << y_low_pct << ", " << y_high_pct << std::endl;
+  // std::cout << "X: Below, Above (tiles): " << x_tiles_below_ << ", " << x_tiles_above_ << std::endl;
+  // std::cout << "Y: Below, Above (tiles): " << y_tiles_below_ << ", " << y_tiles_above_ << std::endl;
+  // std::cout << std::endl;
 }
 
 // ----------------------------------------------------------------------------
@@ -276,12 +273,9 @@ const std::string TileLoader::hash() const
   os << latitude_ << longitude_ << zoom_;
 
   // size information
-  os << sizes_.width << sizes_.height;
-  os << sizes_.width_above << sizes_.width_below;
-  os << sizes_.height_above << sizes_.height_below;
+  os << width_ << height_;
 
   std::hash<std::string> hash_fn;
-
   return std::to_string(hash_fn(os.str()));
 }
 

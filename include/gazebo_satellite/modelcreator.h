@@ -26,8 +26,7 @@ namespace gzworld {
     double zoom;
 
     double width, height;
-    double width_below, width_above;
-    double height_below, height_above;
+    double shift_x, shift_y;
   };
 
   class ModelCreator
@@ -60,8 +59,8 @@ namespace gzworld {
     void createWorldImage();
     void createWorldScript();
     cv::Mat stitchTiles();
-    sdf::ElementPtr createCollision();
-    sdf::ElementPtr createVisual();
+    sdf::ElementPtr createCollision(double xpos, double ypos);
+    sdf::ElementPtr createVisual(double xpos, double ypos);
   };
 
 }

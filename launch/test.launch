@@ -3,11 +3,15 @@
 
   <group ns="/gzworld">
     <param name="name" type="string" value="Rock Canyon Park" />
+    <param name="jpg_quality" type="double" value="60" />
     <param name="tileserver" type="string" value="http://mt1.google.com/vt/lyrs=s&amp;x={x}&amp;y={y}&amp;z={z}" />
     <param name="latitude" type="double" value="40.267463" />
     <param name="longitude" type="double" value="-111.635655" />
     <param name="zoom" type="double" value="21" />
-    <param name="jpg_quality" type="double" value="60" />
+    <param name="width" type="double" value="50" />
+    <param name="height" type="double" value="50" />
+    <param name="shift_ns" type="double" value="0" />
+    <param name="shift_ew" type="double" value="0" />
   </group>
 
   <!-- Start Gazebo -->
