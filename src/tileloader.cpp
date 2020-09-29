@@ -138,7 +138,7 @@ const std::vector<TileLoader::MapTile>& TileLoader::loadTiles(bool download)
         const std::string url = uriForTile(x, y);
 
         // send blocking request
-        auto r = cpr::Get(url);
+        auto r = cpr::Get(cpr::Url{url});
 
         // process the response
         if (r.status_code == 200) {
