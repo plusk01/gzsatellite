@@ -12,7 +12,7 @@ endif()
 include(ExternalProject)
 ExternalProject_Add(cpr
   GIT_REPOSITORY    https://github.com/whoshuu/cpr
-  GIT_TAG           3d14e61ed247a90a07db26fb107beb3086a035d6 # 1 Nov 2017
+  GIT_TAG           5e87cb5f45ac99858f0286dc1c35a6cd27c3bcb9 # July 2020
   GIT_SUBMODULES    ${CPR_GIT_SUBMODULES}
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/build"

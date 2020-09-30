@@ -158,7 +158,7 @@ void ModelCreator::createWorldImage()
 
   // Save the image to file
   std::vector<int> compression_params;
-  compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+  compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
   compression_params.push_back(jpg_quality_);
 
   cv::imwrite(world_img_path_.string(), img, compression_params);
@@ -182,7 +182,7 @@ cv::Mat ModelCreator::stitchTiles()
   // Loop through each sorted tile and place appropriately in image
   for (int i=0; i<numTiles; i++)
   {
-    cv::Mat tile = cv::imread(tiles_[i].imagePath().string(), CV_LOAD_IMAGE_COLOR);
+    cv::Mat tile = cv::imread(tiles_[i].imagePath().string(), cv::IMREAD_COLOR);
 
     // calculate image position
     const int tileCol = i%cols;
