@@ -1,4 +1,4 @@
-[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/plusk01/gzsatellite/blob/master/LICENSE)
+[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/plusk01/gzsatellite/blob/noetic-devel/LICENSE)
 <img src="https://img.shields.io/badge/noetic-passing-green&style=plastic">
 
 # Gazebo Satellite
