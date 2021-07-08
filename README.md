@@ -1,5 +1,5 @@
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/plusk01/gzsatellite/blob/melodic-devel/LICENSE)
-<img src="https://img.shields.io/badge/noetic-passing-green&style=plastic">
+<img src="https://img.shields.io/badge/melodic-passing-green&style=plastic">
 
 # Gazebo Satellite
 ![C++](https://img.shields.io/badge/-C%2B%2B-00599C?style=plastic&logo=C%2B%2B)
