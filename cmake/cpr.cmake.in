@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.4)
+cmake_minimum_required(VERSION 3.0.2)
 project(cpr-download NONE)
 
 if(@CURL_FOUND@)
@@ -12,7 +12,7 @@ endif()
 include(ExternalProject)
 ExternalProject_Add(cpr
   GIT_REPOSITORY    https://github.com/whoshuu/cpr
-  GIT_TAG           5e87cb5f45ac99858f0286dc1c35a6cd27c3bcb9 # July 2020
+  GIT_TAG           e02b6edbe3aa8f560958fec708764752af4cc7fe
   GIT_SUBMODULES    ${CPR_GIT_SUBMODULES}
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/build"
